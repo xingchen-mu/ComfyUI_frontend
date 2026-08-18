@@ -87,8 +87,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     () => activeRunErrors.value?.promptError ?? null
   )
 
-  function updateActiveRunErrors(patch: Partial<RunErrorState>) {
-    const graphId = activeGraphId.value
+  function updateRunErrors(
+    patch: Partial<RunErrorState>,
+    graphId: UUID | null
+  ) {
     if (graphId === null) return
 
     const next: RunErrorState = {
@@ -151,20 +153,38 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
   }
 
-  /** Replaces the full record; empty or null means the run produced no errors. */
-  function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
-    updateActiveRunErrors({
-      nodeErrors:
-        nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
-    })
+  /**
+   * Replaces the full record; empty or null means the run produced no errors.
+   *
+   * `graphId` files the errors against the workflow that produced them, which
+   * is not necessarily the one on screen. It defaults to the visible workflow
+   * for callers that record synchronously while submitting it.
+   */
+  function recordNodeErrors(
+    nodeErrors: Record<string, NodeError> | null,
+    graphId: UUID | null = activeGraphId.value
+  ) {
+    updateRunErrors(
+      {
+        nodeErrors:
+          nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+      },
+      graphId
+    )
   }
 
-  function recordExecutionError(detail: ExecutionErrorWsMessage) {
-    updateActiveRunErrors({ executionError: detail })
+  function recordExecutionError(
+    detail: ExecutionErrorWsMessage,
+    graphId: UUID | null = activeGraphId.value
+  ) {
+    updateRunErrors({ executionError: detail }, graphId)
   }
 
-  function recordPromptError(promptError: PromptError) {
-    updateActiveRunErrors({ promptError })
+  function recordPromptError(
+    promptError: PromptError,
+    graphId: UUID | null = activeGraphId.value
+  ) {
+    updateRunErrors({ promptError }, graphId)
   }
 
   function showErrorOverlay() {
@@ -186,7 +206,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   function clearExecutionStartErrors() {
-    updateActiveRunErrors({ executionError: null, promptError: null })
+    updateRunErrors(
+      { executionError: null, promptError: null },
+      activeGraphId.value
+    )
     if (!lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
@@ -194,7 +217,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
-    updateActiveRunErrors({ promptError: null })
+    updateRunErrors({ promptError: null }, activeGraphId.value)
   }
 
   function clearSimpleNodeErrorsFromRecord(
@@ -344,9 +367,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
 
     if (updated === lastNodeErrors.value) return
-    updateActiveRunErrors({
-      nodeErrors: Object.keys(updated).length > 0 ? updated : null
-    })
+    updateRunErrors(
+      { nodeErrors: Object.keys(updated).length > 0 ? updated : null },
+      activeGraphId.value
+    )
   }
 
   /**
