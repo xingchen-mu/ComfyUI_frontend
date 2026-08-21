@@ -157,6 +157,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
+  function updateOptions(
+    widgetId: WidgetId,
+    options: Partial<WidgetState['options']>
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.options = { ...state.options, ...options }
+    return true
+  }
+
   function deleteWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
@@ -235,6 +245,27 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphOrders.delete(localNodeId)
   }
 
+  function replaceNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const widgetStates = getGraphWidgetStates(graphId)
+    const nextOrder = orderedWidgetIds.filter(
+      (id) => widgetStates.get(id)?.nodeId === localNodeId
+    )
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(localNodeId)
+
+    if (nextOrder.length === 0) {
+      graphOrders.delete(localNodeId)
+    } else if (order) {
+      order.splice(0, order.length, ...nextOrder)
+    } else {
+      graphOrders.set(localNodeId, reactive([...nextOrder]))
+    }
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
@@ -246,10 +277,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     setValue,
+    updateOptions,
     deleteWidget,
     getNodeWidgets,
     getNodeWidgetIds,
     setNodeWidgetOrder,
+    replaceNodeWidgetOrder,
     removeNodeWidgetOrder,
     releaseNodeWidgets,
     clearGraph

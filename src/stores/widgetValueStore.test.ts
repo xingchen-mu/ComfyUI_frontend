@@ -202,6 +202,20 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
     })
+
+    it('replaces order using retained widget state', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.removeNodeWidgetOrder(seed)
+
+      store.replaceNodeWidgetOrder(graphA, toNodeId('node-1'), [seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
+      expect(store.getWidget(steps)?.value).toBe(20)
+    })
   })
 
   describe('value mutation', () => {
@@ -213,6 +227,24 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.value).toBe(200)
       expect(
         store.setValue(widgetId(graphA, toNodeId('missing'), 'seed'), 1)
+      ).toBe(false)
+    })
+
+    it('updateOptions preserves existing options and reports missing widgets', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { min: 0, max: 10 } })
+      )
+
+      expect(store.updateOptions(seedA, { advanced: true })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({
+        min: 0,
+        max: 10,
+        advanced: true
+      })
+      expect(
+        store.updateOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
       ).toBe(false)
     })
 

@@ -49,6 +49,7 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
+import { normalizeWidgetsView } from './node/widgetsView'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -1162,6 +1163,7 @@ export class LGraph
       node.flags.ghost = true
     }
 
+    normalizeWidgetsView(node)
     node.graph = this
 
     // Adopt the store-backed shell state and widget bindings now that the node
