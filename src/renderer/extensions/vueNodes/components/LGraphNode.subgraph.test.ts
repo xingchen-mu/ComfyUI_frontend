@@ -90,7 +90,8 @@ describe('Vue Node - Subgraph Functionality', () => {
     mode: 0,
     flags: {},
     inputs: [],
-    outputs: []
+    outputs: [],
+    properties: {}
   })
 
   const renderComponent = (props: { nodeData: NodeState }) => {
